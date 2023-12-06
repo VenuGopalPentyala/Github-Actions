@@ -21,10 +21,14 @@ jobs:
           id: get_latest_tag
           run: |
             git fetch --tags
-            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "Latest tag is: $latest_tag"
-            echo "::set-output name=tag::$latest_tag"
-      
+            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1) || echo "")
+            if [ -z "$latest_tag" ]; then
+              echo "No tags found in the repository."
+              echo "::set-output name=tag::"
+            else
+              echo "Latest tag is: $latest_tag"
+              echo "::set-output name=tag::$latest_tag"
+            fi
         - name: Create and push new tag
           # if: steps.terraform_apply.outcome == 'success'
           run: |
