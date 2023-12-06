@@ -17,11 +17,26 @@ jobs:
         - name: hello world
           run: echo "Hello World"
           shell: bash
-    GoodBye:
-        runs-on: ubuntu-latest
-        steps:
-        - name : GoodBye
-          run : echo "Good Bye"
-          shell: bash 
+        - name: Get latest tag
+          id: get_latest_tag
+          run: |
+            git fetch --tags
+            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+            echo "Latest tag is: $latest_tag"
+            echo "::set-output name=tag::$latest_tag"
+      
+        - name: Create and push new tag
+          # if: steps.terraform_apply.outcome == 'success'
+          run: |
+            latest_tag="${{ steps.get_latest_tag.outputs.tag }}"
+            if [ -z "$latest_tag" ]; then
+              new_tag="v1.0"
+            else
+              tag_number=$(echo $latest_tag | grep -oP '\d+\.\d+' | tail -n 1)
+              incremented_tag=$(echo "$tag_number + 0.1" | bc)
+              new_tag="v$(printf "%.1f" $incremented_tag)"
+            fi
+            git tag -a -m "CI Build: ${{ github.run_number }}" $new_tag
+            git push origin $new_tag
 
    
